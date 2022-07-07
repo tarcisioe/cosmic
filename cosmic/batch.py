@@ -23,6 +23,11 @@ class Batch:
     eta: date
     _allocated: set[OrderLine] = field(init=False, default_factory=set)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Batch):
+            return False
+        return self.reference == other.reference
+
     def can_allocate(self, order_line: OrderLine) -> bool:
         """Check if a batch can allocate a given order line.
 
