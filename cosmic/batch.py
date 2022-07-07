@@ -21,7 +21,7 @@ class Batch:
     sku: SKU
     quantity: int
     eta: date
-    allocated: set[OrderLine] = field(init=False, default_factory=set)
+    _allocated: set[OrderLine] = field(init=False, default_factory=set)
 
     def can_allocate(self, order_line: OrderLine) -> bool:
         """Check if a batch can allocate a given order line.
@@ -54,7 +54,7 @@ class Batch:
                 f"of type {self.sku}."
             )
 
-        self.allocated.add(order_line)
+        self._allocated.add(order_line)
 
     def deallocate(self, order_line: OrderLine) -> None:
         """Deallocate an order from a batch.
@@ -63,13 +63,13 @@ class Batch:
             order_line: The order line to deallocate.
         """
         try:
-            self.allocated.remove(order_line)
+            self._allocated.remove(order_line)
         except KeyError:
             pass
 
     def available(self) -> int:
         """Get the number of available products still remaining."""
-        allocated_total = sum(line.quantity for line in self.allocated)
+        allocated_total = sum(line.quantity for line in self._allocated)
         return self.quantity - allocated_total
 
 
