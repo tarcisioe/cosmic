@@ -3,8 +3,13 @@ from datetime import date
 
 import pytest
 
-from cosmic.batch import Batch, BatchReference, NotEnoughProductsOnBatch, allocate
-from cosmic.order import SKU, OrderLine, OrderReference
+from cosmic.domain.batch import (
+    Batch,
+    BatchReference,
+    NotEnoughProductsOnBatch,
+    allocate,
+)
+from cosmic.domain.order import SKU, OrderLine, OrderReference
 
 
 def test_allocating_to_a_batch_reduces_the_available_quantity() -> None:

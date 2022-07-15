@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from ..batch import Batch, BatchReference
+from ..domain.batch import Batch, BatchReference
 
 
 @dataclass
@@ -19,3 +19,7 @@ class SQLAlchemyRepository:
     def get(self, batch_reference: BatchReference) -> Batch:
         """Add a batch to the repository."""
         return self.session.query(Batch).filter_by(reference=batch_reference).one()
+
+    def get_all(self) -> list[Batch]:
+        """Get all batches from the repository."""
+        return self.session.query(Batch).all()

@@ -3,8 +3,8 @@ from sqlalchemy import Column, Date, ForeignKey, Integer, MetaData, String, Tabl
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import registry, relationship
 
-from ..batch import Batch
-from ..order import OrderLine
+from ..domain.batch import Batch
+from ..domain.order import OrderLine
 
 map_registry = registry()
 metadata = MetaData()

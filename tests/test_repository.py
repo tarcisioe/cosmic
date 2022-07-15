@@ -2,13 +2,11 @@
 # pylint: disable=redefined-outer-name
 import logging
 from datetime import date
-from typing import Iterable
 
-import pytest
 from sqlalchemy.orm import Session
 
-from cosmic.batch import SKU, Batch, BatchReference
-from cosmic.order import OrderLine, OrderReference
+from cosmic.domain.batch import SKU, Batch, BatchReference
+from cosmic.domain.order import OrderLine, OrderReference
 from cosmic.repository import Repository
 from cosmic.sqlalchemy.repository import SQLAlchemyRepository
 
@@ -16,49 +14,25 @@ logging.basicConfig()
 logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
 
-# pylint: disable=unused-argument
-
-
-@pytest.fixture(scope="session")
-def sqlalchemy_mappings() -> None:
-    """Start sqlalchemy mappings for tests."""
-    from cosmic.sqlalchemy.mappings import start_mappings
-
-    start_mappings()
-
-
-@pytest.fixture
-def session(sqlalchemy_mappings: None) -> Iterable[Session]:
-    """Get a working SQLAlchemy Session."""
-    from sqlalchemy import create_engine
-
-    from cosmic.sqlalchemy.mappings import create_schema
-
-    engine = create_engine("sqlite://")
-    create_schema(engine)
-
-    with Session(engine) as sqlite_session:
-        yield sqlite_session
-
-
-# pylint: enable=unused-argument
-
-
-def test_repository_can_save_a_batch(session: Session) -> None:
+def test_repository_can_save_a_batch(test_db_session: Session) -> None:
     """SQLAlchemyRepository should successfully save a batch."""
     batch = Batch(
         BatchReference("batch1"), SKU("RUSTY-SOAPDISH"), 100, eta=date(2022, 7, 6)
     )
 
-    repository: Repository = SQLAlchemyRepository(session)
+    repository: Repository = SQLAlchemyRepository(test_db_session)
     repository.add(batch)
-    session.commit()
+    test_db_session.commit()
 
-    rows = session.execute('SELECT reference, sku, quantity, eta FROM "batches"')
+    rows = test_db_session.execute(
+        'SELECT reference, sku, quantity, eta FROM "batches"'
+    )
     assert list(rows) == [("batch1", "RUSTY-SOAPDISH", 100, "2022-07-06")]
 
 
-def test_repository_can_retrieve_a_batch_with_allocations(session: Session) -> None:
+def test_repository_can_retrieve_a_batch_with_allocations(
+    test_db_session: Session,
+) -> None:
     """SQLAlchemyRepository should retrieve a batch with allocations from the database."""
 
     def insert_order_line(session: Session) -> int:
@@ -99,12 +73,12 @@ def test_repository_can_retrieve_a_batch_with_allocations(session: Session) -> N
     batch1_reference = BatchReference("batch1")
     batch2_reference = BatchReference("batch2")
 
-    orderline_id = insert_order_line(session)
-    batch1_id = insert_batch(session, batch1_reference)
-    insert_batch(session, batch2_reference)
-    insert_allocation(session, orderline_id, batch1_id)
+    orderline_id = insert_order_line(test_db_session)
+    batch1_id = insert_batch(test_db_session, batch1_reference)
+    insert_batch(test_db_session, batch2_reference)
+    insert_allocation(test_db_session, orderline_id, batch1_id)
 
-    repository: Repository = SQLAlchemyRepository(session)
+    repository: Repository = SQLAlchemyRepository(test_db_session)
     retrieved = repository.get(batch1_reference)
 
     expected = Batch(batch1_reference, SKU("GENERIC-SOFA"), 100, eta=date(2022, 7, 6))
