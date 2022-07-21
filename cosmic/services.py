@@ -1,9 +1,11 @@
 """The service layer."""
+from dataclasses import dataclass
+from datetime import date
 from typing import Any, Iterable
 
 from .domain import batch
-from .domain.batch import Batch
-from .domain.order import OrderLine
+from .domain.batch import Batch, BatchReference
+from .domain.order import SKU, OrderLine
 from .repository import Repository
 
 
@@ -35,3 +37,26 @@ def allocate(line: OrderLine, repo: Repository, session: Any) -> str:
         raise OutOfStock(f"Out of stock for sku {line.sku}")
 
     return batchref
+
+
+@dataclass
+class BatchCandidate:
+    """Candidate values for a Batch."""
+
+    reference: str
+    sku: str
+    quantity: int
+    eta: date
+
+
+def add_batch(candidate: BatchCandidate, repo: Repository, session: Any):
+    """Add a new batch to the repository."""
+    repo.add(
+        Batch(
+            BatchReference(candidate.reference),
+            SKU(candidate.sku),
+            candidate.quantity,
+            candidate.eta,
+        )
+    )
+    session.commit()

@@ -1,7 +1,7 @@
 """Repository abstractions."""
 from typing import Protocol
 
-from .domain.batch import Batch, BatchReference
+from .domain.batch import Batch
 
 
 class Repository(Protocol):
@@ -10,7 +10,7 @@ class Repository(Protocol):
     def add(self, batch: Batch) -> None:
         """Add a batch to the repository."""
 
-    def get(self, batch_reference: BatchReference) -> Batch:
+    def get(self, batch_reference: str) -> Batch | None:
         """Get a Batch by its reference."""
 
     def get_all(self) -> list[Batch]:
