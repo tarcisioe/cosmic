@@ -6,9 +6,9 @@ from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from . import services
 from .domain.order import SKU, OrderLine, OrderReference
-from .sqlalchemy.repository import SQLAlchemyRepository
+from .service_layer import services
+from .sqlalchemy.unit_of_work import SQLAlchemyUnitOfWork
 
 
 class AllocateRequest(BaseModel):
@@ -44,6 +44,9 @@ def make_api(engine: Engine):
     """Create the API."""
     app = FastAPI()
 
+    def get_session() -> Session:
+        return Session(engine)
+
     @app.post("/allocate/", status_code=201)
     async def allocate_endpoint(
         data: AllocateRequest, response: Response
@@ -54,16 +57,13 @@ def make_api(engine: Engine):
             data.qty,
         )
 
-        with Session(engine) as session:
-            repository = SQLAlchemyRepository(session)
+        uow = SQLAlchemyUnitOfWork(get_session)
 
-            try:
-                batch = services.allocate(order_line, repository, session)
-            except (services.OutOfStock, services.InvalidSku) as exc:
-                response.status_code = 400
-                return ErrorResponse(message=str(exc))
-
-            session.commit()
+        try:
+            batch = services.allocate(order_line, uow)
+        except (services.OutOfStock, services.InvalidSku) as exc:
+            response.status_code = 400
+            return ErrorResponse(message=str(exc))
 
         return AllocateResponse(batchref=batch)
 
@@ -71,14 +71,11 @@ def make_api(engine: Engine):
     async def add_batch(data: AddBatchRequest) -> str:
         eta = datetime.fromisoformat(data.eta).date()
 
-        with Session(engine) as session:
-            repository = SQLAlchemyRepository(session)
+        uow = SQLAlchemyUnitOfWork(get_session)
 
-            services.add_batch(
-                services.BatchCandidate(data.ref, data.sku, data.qty, eta),
-                repository,
-                session,
-            )
+        services.add_batch(
+            services.BatchCandidate(data.ref, data.sku, data.qty, eta), uow
+        )
 
         return "OK"
 

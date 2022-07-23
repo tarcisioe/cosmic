@@ -1,7 +1,7 @@
 """Pytest configurations and fixtures."""
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
-from typing import Iterable
+from typing import Callable, Iterable
 
 import pytest
 from sqlalchemy.engine import Engine
@@ -27,6 +27,16 @@ def test_db_engine(start_mappings: None) -> Engine:
     create_schema(engine)
 
     return engine
+
+
+@pytest.fixture
+def session_factory(test_db_engine: Engine) -> Callable[[], Session]:
+    """Get a SQLAlchemy Session factory function."""
+
+    def factory() -> Session:
+        return Session(test_db_engine)
+
+    return factory
 
 
 @pytest.fixture
