@@ -6,6 +6,15 @@ SKU = NewType("SKU", str)
 OrderReference = NewType("OrderReference", str)
 
 
+@dataclass
+class OrderCandidate:
+    """The requested info of what may eventually be an order."""
+
+    order: str
+    sku: str
+    quantity: int
+
+
 # TODO: check if it is possible to operate with a frozen class.
 @dataclass(unsafe_hash=True)
 class OrderLine:

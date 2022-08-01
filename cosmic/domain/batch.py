@@ -13,6 +13,16 @@ class NotEnoughProductsOnBatch(Exception):
 BatchReference = NewType("BatchReference", str)
 
 
+@dataclass
+class BatchCandidate:
+    """Candidate values for a Batch."""
+
+    reference: str
+    sku: str
+    quantity: int
+    eta: date
+
+
 @dataclass(eq=False)
 class Batch:
     """A product batch which is ordered from a manufacturer."""

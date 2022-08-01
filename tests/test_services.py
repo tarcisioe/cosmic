@@ -6,6 +6,7 @@ import pytest
 
 from cosmic.domain.batch import Batch, BatchReference
 from cosmic.domain.order import SKU, OrderLine, OrderReference
+from cosmic.domain.product import Product
 from cosmic.service_layer import services
 from cosmic.service_layer.unit_of_work import UnitOfWork
 
@@ -29,6 +30,21 @@ class FakeRepository:
         return list(self._batches.values())
 
 
+@dataclass
+class FakeProductRepository:
+    """Fake implementation of a repository."""
+
+    _products: dict[SKU, Product] = field(default_factory=dict)
+
+    def add(self, product: Product) -> None:
+        """Add a batch to the repository."""
+        self._products[product.sku] = product
+
+    def get(self, sku: str) -> Product | None:
+        """Get a batch from the repository by its reference."""
+        return self._products.get(SKU(sku))
+
+
 class FakeSession:
     """Fake database session."""
 
@@ -49,6 +65,7 @@ class FakeUnitOfWork(UnitOfWork):
     """Fake Unit of Work."""
 
     batches: FakeRepository = field(default_factory=FakeRepository)
+    products: FakeProductRepository = field(default_factory=FakeProductRepository)
     commit_count: int = 0
 
     def commit(self):
@@ -118,5 +135,9 @@ def test_add_batch() -> None:
         services.BatchCandidate("b1", "CRUNCHY-ARMCHAIR", 100, date(2010, 1, 1)), uow
     )
 
-    assert uow.batches.get("b1") is not None
+    product = uow.products.get("CRUNCHY-ARMCHAIR")
+
+    assert product is not None
+    assert len(product.batches) == 1
+    assert product.batches[0].reference == BatchReference("b1")
     assert uow.committed

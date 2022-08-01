@@ -142,18 +142,20 @@ confidence=HIGH,
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=raw-checker-failed,
+disable=
+        assignment-from-no-return,
         bad-inline-option,
-        locally-disabled,
-        file-ignored,
-        suppressed-message,
-        useless-suppression,
         deprecated-pragma,
-        use-symbolic-message-instead,
-        import-outside-toplevel,
-        too-few-public-methods,
-        protected-access,
+        file-ignored,
         fixme,
+        import-outside-toplevel,
+        locally-disabled,
+        protected-access,
+        raw-checker-failed,
+        suppressed-message,
+        too-few-public-methods,
+        use-symbolic-message-instead,
+        useless-suppression,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

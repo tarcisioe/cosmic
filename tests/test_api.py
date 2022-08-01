@@ -1,6 +1,6 @@
 """End-to-end API tests."""
 # pylint: disable=redefined-outer-name
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import AsyncIterator
 
 import pytest
@@ -8,7 +8,19 @@ import pytest_asyncio
 from httpx import AsyncClient, Response
 from sqlalchemy.engine import Engine
 
+from cosmic.domain.events import OutOfStock
 from cosmic.domain.order import SKU
+from cosmic.messagebus import MessageBus
+
+
+@dataclass
+class FakeOutOfStockHandler:
+    """Fake handler for OutOfStock events."""
+
+    events_registered: list[OutOfStock] = field(default_factory=list)
+
+    def __call__(self, event: OutOfStock) -> None:
+        self.events_registered.append(event)
 
 
 @dataclass
@@ -17,6 +29,7 @@ class APITestTools:
 
     client: AsyncClient
     url: str
+    out_of_stock_handler: FakeOutOfStockHandler
 
 
 @pytest_asyncio.fixture
@@ -26,8 +39,15 @@ async def api(test_db_engine: Engine) -> AsyncIterator[APITestTools]:
 
     url = "http://test"
 
-    async with AsyncClient(app=make_api(test_db_engine), base_url=url) as client:
-        yield APITestTools(client, url)
+    fake_out_of_stockhandler = FakeOutOfStockHandler()
+
+    messagebus = MessageBus()
+    messagebus.add_handler(OutOfStock, fake_out_of_stockhandler)
+
+    async with AsyncClient(
+        app=make_api(test_db_engine, messagebus), base_url=url
+    ) as client:
+        yield APITestTools(client, url, fake_out_of_stockhandler)
 
 
 async def post_to_add_batch(
@@ -94,7 +114,7 @@ async def test_allocations_are_persisted(api: APITestTools):
 @pytest.mark.asyncio
 async def test_400_message_for_out_of_stock(api: APITestTools):
     """HTTP API should return 400 when we are out of stock."""
-    sku = "PRODUCT1"
+    sku = SKU("PRODUCT1")
     small_batch = "BATCH1"
     large_order = "ORDER1"
 
@@ -107,6 +127,8 @@ async def test_400_message_for_out_of_stock(api: APITestTools):
 
     assert response.status_code == 400
     assert response.json()["message"] == f"Out of stock for sku {sku}"
+
+    assert api.out_of_stock_handler.events_registered == [OutOfStock(sku)]
 
 
 @pytest.mark.asyncio

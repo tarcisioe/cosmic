@@ -4,26 +4,22 @@ from dataclasses import dataclass
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
-from ..domain.batch import Batch
+from ..domain.product import Product
 
 
 @dataclass
-class SQLAlchemyRepository:
+class SQLAlchemyProductRepository:
     """A SQLAlchemy-based Repository."""
 
     session: Session
 
-    def add(self, batch: Batch) -> None:
+    def add(self, product: Product) -> None:
         """Add a batch to the repository."""
-        self.session.add(batch)
+        self.session.add(product)
 
-    def get(self, batch_reference: str) -> Batch | None:
+    def get(self, sku: str) -> Product | None:
         """Add a batch to the repository."""
         try:
-            return self.session.query(Batch).filter_by(reference=batch_reference).one()
+            return self.session.query(Product).filter_by(sku=sku).one()
         except NoResultFound:
             return None
-
-    def get_all(self) -> list[Batch]:
-        """Get all batches from the repository."""
-        return self.session.query(Batch).all()

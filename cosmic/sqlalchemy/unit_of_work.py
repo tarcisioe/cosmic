@@ -5,7 +5,7 @@ from typing import Callable, Type
 from sqlalchemy.orm import Session
 
 from ..service_layer.unit_of_work import UnitOfWork
-from .repository import SQLAlchemyRepository
+from .repository import SQLAlchemyProductRepository
 
 SessionFactory = Callable[[], Session]
 
@@ -16,11 +16,11 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
 
     session_factory: SessionFactory
     session: Session = field(init=False)
-    batches: SQLAlchemyRepository = field(init=False)
+    products: SQLAlchemyProductRepository = field(init=False)
 
     def __enter__(self) -> "SQLAlchemyUnitOfWork":
-        self.session: Session = self.session_factory()
-        self.batches = SQLAlchemyRepository(self.session)
+        self.session = self.session_factory()
+        self.products = SQLAlchemyProductRepository(self.session)
         return self
 
     def __exit__(

@@ -7,7 +7,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from .domain.order import SKU, OrderLine, OrderReference
+from .messagebus import MessageBus
 from .service_layer import services
+from .service_layer.unit_of_work import TrackingUnitOfWork
 from .sqlalchemy.unit_of_work import SQLAlchemyUnitOfWork
 
 
@@ -40,7 +42,7 @@ class AddBatchRequest(BaseModel):
     eta: str
 
 
-def make_api(engine: Engine):
+def make_api(engine: Engine, messagebus: MessageBus):
     """Create the API."""
     app = FastAPI()
 
@@ -57,7 +59,7 @@ def make_api(engine: Engine):
             data.qty,
         )
 
-        uow = SQLAlchemyUnitOfWork(get_session)
+        uow = TrackingUnitOfWork(SQLAlchemyUnitOfWork(get_session), messagebus)
 
         try:
             batch = services.allocate(order_line, uow)
@@ -71,7 +73,7 @@ def make_api(engine: Engine):
     async def add_batch(data: AddBatchRequest) -> str:
         eta = datetime.fromisoformat(data.eta).date()
 
-        uow = SQLAlchemyUnitOfWork(get_session)
+        uow = TrackingUnitOfWork(SQLAlchemyUnitOfWork(get_session), messagebus)
 
         services.add_batch(
             services.BatchCandidate(data.ref, data.sku, data.qty, eta), uow
